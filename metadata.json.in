@@ -1,0 +1,9 @@
+{
+    "uuid": "@UUID@",
+    "name": "@NAME@",
+    "description": "Compact quick settings menu for GNOME 43 and newer",
+    "url": "@URL@",
+    "version": "@VERSION@",
+    "gettext-domain": "@GETTEXT_DOMAIN@",
+    "shell-version": ["43"]
+}
