@@ -34,6 +34,7 @@ by forking the repository and using Pull Requests to integrate your changes.
 
 ### License
 
-This extension is released under the terms of the MIT/X11 license.
+This extension is released under the terms of the under the terms of version 2
+of the GNU General Public License.
 
 See the `LICENSE` file for more details.
