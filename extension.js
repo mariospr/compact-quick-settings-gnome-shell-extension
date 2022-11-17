@@ -40,8 +40,8 @@ const UnsafeModeIndicator = GObject.registerClass(
         }
     });
 
-var QuickSettings = GObject.registerClass(
-class QuickSettings extends PanelMenu.Button {
+var CompactQuickSettings = GObject.registerClass(
+class CompactQuickSettings extends PanelMenu.Button {
     _init() {
         super._init(0.0, C_('System menu in the top bar', 'System'), true);
 
@@ -75,7 +75,6 @@ class QuickSettings extends PanelMenu.Button {
         this._autoRotate = new imports.ui.status.autoRotate.Indicator();
         this._unsafeMode = new UnsafeModeIndicator();
 
-        this._indicators.add_child(this._system);
         this._indicators.add_child(this._brightness);
         this._indicators.add_child(this._remoteAccess);
         this._indicators.add_child(this._thunderbolt);
@@ -91,6 +90,7 @@ class QuickSettings extends PanelMenu.Button {
         this._indicators.add_child(this._autoRotate);
         this._indicators.add_child(this._volume);
         this._indicators.add_child(this._unsafeMode);
+        this._indicators.add_child(this._system);
 
         this._addItems(this._system.quickSettingsItems);
         this._addItems(this._volume.quickSettingsItems);
@@ -120,10 +120,10 @@ function init() {
 }
 
 function enable() {
-    quickSettingsButton = new QuickSettings(Main.panel);;
-    buttonPosition = Main.panel.find_child_by_name("panelRight").get_children().length;
-    Main.panel.addToStatusArea('compactQuickSettings', quickSettingsButton, buttonPosition);
     Main.panel.statusArea['quickSettings'].container.hide()
+    Main.panel.addToStatusArea('compactQuickSettings',
+                               new CompactQuickSettings(Main.panel),
+                               Main.panel.find_child_by_name("panelRight").get_children().length);
 }
 
 function disable() {
