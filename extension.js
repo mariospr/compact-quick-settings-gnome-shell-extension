@@ -20,25 +20,42 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>
 
-const { GObject, St } = imports.gi;
-const { QuickSettingsMenu, SystemIndicator } = imports.ui.quickSettings;
+const { GObject, Shell, St } = imports.gi;
+const { QuickSettingsItem, QuickSettingsMenu } = imports.ui.quickSettings;
 const Config = imports.misc.config;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 
+const SoundSettingsItem = GObject.registerClass(
+class SoundSettingsItem extends QuickSettingsItem {
+    _init() {
+        super._init({
+            style_class: 'icon-button',
+            can_focus: true,
+            icon_name: 'org.gnome.Settings-sound-symbolic',
+            visible: !Main.sessionMode.isGreeter,
+        });
+
+        this.connect('clicked', () => {
+            const app = Shell.AppSystem.get_default().lookup_app('gnome-sound-panel.desktop');
+            Main.overview.hide();
+            Main.panel.closeQuickSettings();
+            app.activate();
+        });
+    }
+});
+
 const UnsafeModeIndicator = GObject.registerClass(
-    class UnsafeModeIndicator extends SystemIndicator {
-        _init() {
-            super._init();
-
-            this._indicator = this._addIndicator();
-            this._indicator.icon_name = 'channel-insecure-symbolic';
-
-            global.context.bind_property('unsafe-mode',
-                this._indicator, 'visible',
-                GObject.BindingFlags.SYNC_CREATE);
-        }
-    });
+class UnsafeModeIndicator extends imports.ui.quickSettings.SystemIndicator {
+    _init() {
+        super._init();
+        this._indicator = this._addIndicator();
+        this._indicator.icon_name = 'channel-insecure-symbolic';
+        global.context.bind_property('unsafe-mode',
+            this._indicator, 'visible',
+            GObject.BindingFlags.SYNC_CREATE);
+    }
+});
 
 var CompactQuickSettings = GObject.registerClass(
 class CompactQuickSettings extends PanelMenu.Button {
@@ -63,6 +80,12 @@ class CompactQuickSettings extends PanelMenu.Button {
             this._bluetooth = null;
 
         this._system = new imports.ui.status.system.Indicator();
+
+        // Replace the Screenshot item with a direct access to Sound settings.
+        this._system._systemItem.child.replace_child(
+            this._system._systemItem.child.get_child_at_index(2),
+            new SoundSettingsItem());
+
         this._volume = new imports.ui.status.volume.Indicator();
         this._brightness = new imports.ui.status.brightness.Indicator();
         this._remoteAccess = new imports.ui.status.remoteAccess.RemoteAccessApplet();
