@@ -152,7 +152,7 @@ function enable() {
     // Replace it with the QuickSettings with our compact version.
     Main.panel.statusArea.quickSettings = null;
     Main.panel.addToStatusArea('quickSettings',
-                               new CompactQuickSettings(Main.panel),
+                               new CompactQuickSettings(),
                                Main.panel.find_child_by_name("panelRight").get_children().length);
 }
 
