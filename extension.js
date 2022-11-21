@@ -139,18 +139,29 @@ class CompactQuickSettings extends PanelMenu.Button {
     }
 });
 
+let originalQuickSettings = null;
+
 function init() {
 }
 
 function enable() {
-    Main.panel.statusArea['quickSettings'].container.hide()
-    Main.panel.addToStatusArea('compactQuickSettings',
+    // Save and hide the original QuickSettings before replacing it.
+    originalQuickSettings = Main.panel.statusArea.quickSettings;
+    originalQuickSettings.container.hide();
+
+    // Replace it with the QuickSettings with our compact version.
+    Main.panel.statusArea.quickSettings = null;
+    Main.panel.addToStatusArea('quickSettings',
                                new CompactQuickSettings(Main.panel),
                                Main.panel.find_child_by_name("panelRight").get_children().length);
 }
 
 function disable() {
-    Main.panel.statusArea['quickSettings'].container.show()
-    Main.panel.statusArea['compactQuickSettings'].container.destroy()
-    Main.panel.statusArea['compactQuickSettings'] = null;
+    // Destroy our custom QuickSettings menu.
+    Main.panel.statusArea.quickSettings.destroy()
+
+    // Finally, show and restore the original one.
+    originalQuickSettings.container.show();
+    Main.panel.statusArea.quickSettings = originalQuickSettings;
+    originalQuickSettings = null;
 }
