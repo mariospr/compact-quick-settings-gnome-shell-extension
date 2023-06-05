@@ -1,5 +1,5 @@
 AC_PREREQ(2.63)
-AC_INIT([compact-quick-settings],[3],[https://github.com/mariospr/compact-quick-settings-gnome-shell-extension])
+AC_INIT([compact-quick-settings],[4],[https://github.com/mariospr/compact-quick-settings-gnome-shell-extension])
 
 AC_CONFIG_MACRO_DIR([m4])
 
