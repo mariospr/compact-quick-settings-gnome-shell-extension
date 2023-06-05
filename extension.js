@@ -97,6 +97,7 @@ class CompactQuickSettings extends PanelMenu.Button {
         this._rfkill = new imports.ui.status.rfkill.Indicator();
         this._autoRotate = new imports.ui.status.autoRotate.Indicator();
         this._unsafeMode = new UnsafeModeIndicator();
+        this._backgroundApps = new imports.ui.status.backgroundApps.Indicator();
 
         this._indicators.add_child(this._brightness);
         this._indicators.add_child(this._remoteAccess);
@@ -132,6 +133,8 @@ class CompactQuickSettings extends PanelMenu.Button {
         this._addItems(this._rfkill.quickSettingsItems);
         this._addItems(this._autoRotate.quickSettingsItems);
         this._addItems(this._unsafeMode.quickSettingsItems);
+
+        this._addItems(this._backgroundApps.quickSettingsItems);
     }
 
     _addItems(items, colSpan = 1) {
