@@ -20,11 +20,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see <http://www.gnu.org/licenses/>
 
-const { GObject, Shell, St } = imports.gi;
-const { QuickSettingsItem, QuickSettingsMenu } = imports.ui.quickSettings;
-const Config = imports.misc.config;
-const Main = imports.ui.main;
-const PanelMenu = imports.ui.panelMenu;
+import GObject from 'gi://GObject';
+import Shell from 'gi://Shell';
+import St from 'gi://St';
+import {QuickSettingsItem, QuickSettingsMenu, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+
+import * as RemoteAccessStatus from 'resource:///org/gnome/shell/ui/status/remoteAccess.js';
+import * as PowerProfileStatus from 'resource:///org/gnome/shell/ui/status/powerProfiles.js';
+import * as RFKillStatus from 'resource:///org/gnome/shell/ui/status/rfkill.js';
+import * as CameraStatus from 'resource:///org/gnome/shell/ui/status/camera.js';
+import * as VolumeStatus from 'resource:///org/gnome/shell/ui/status/volume.js';
+import * as BrightnessStatus from 'resource:///org/gnome/shell/ui/status/brightness.js';
+import * as SystemStatus from 'resource:///org/gnome/shell/ui/status/system.js';
+import * as LocationStatus from 'resource:///org/gnome/shell/ui/status/location.js';
+import * as NightLightStatus from 'resource:///org/gnome/shell/ui/status/nightLight.js';
+import * as DarkModeStatus from 'resource:///org/gnome/shell/ui/status/darkMode.js';
+import * as BacklightStatus from 'resource:///org/gnome/shell/ui/status/backlight.js';
+import * as ThunderboltStatus from 'resource:///org/gnome/shell/ui/status/thunderbolt.js';
+import * as AutoRotateStatus from 'resource:///org/gnome/shell/ui/status/autoRotate.js';
+import * as BackgroundAppsStatus from 'resource:///org/gnome/shell/ui/status/backgroundApps.js';
+
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SoundSettingsItem = GObject.registerClass(
 class SoundSettingsItem extends QuickSettingsItem {
@@ -46,7 +65,7 @@ class SoundSettingsItem extends QuickSettingsItem {
 });
 
 const UnsafeModeIndicator = GObject.registerClass(
-class UnsafeModeIndicator extends imports.ui.quickSettings.SystemIndicator {
+class UnsafeModeIndicator extends SystemIndicator {
     _init() {
         super._init();
         this._indicator = this._addIndicator();
@@ -59,8 +78,8 @@ class UnsafeModeIndicator extends imports.ui.quickSettings.SystemIndicator {
 
 var CompactQuickSettings = GObject.registerClass(
 class CompactQuickSettings extends PanelMenu.Button {
-    _init() {
-        super._init(0.0, C_('System menu in the top bar', 'System'), true);
+    constructor() {
+        super(0.0, C_('System menu in the top bar', 'System'), true);
 
         this._indicators = new St.BoxLayout({
             style_class: 'panel-status-indicators-box',
@@ -68,103 +87,127 @@ class CompactQuickSettings extends PanelMenu.Button {
         this.add_child(this._indicators);
 
         this.setMenu(new QuickSettingsMenu(this));
+        this._setupIndicators().catch(error =>
+            logError(error, 'Failed to setup quick settings'));
+    }
 
-        if (Config.HAVE_NETWORKMANAGER)
-            this._network = new imports.ui.status.network.Indicator();
-        else
+    async _setupIndicators() {
+        if (Config.HAVE_NETWORKMANAGER) {
+            const NetworkStatus = await import('resource:///org/gnome/shell/ui/status/network.js');
+            this._network = new NetworkStatus.Indicator();
+        } else {
             this._network = null;
+        }
 
-        if (Config.HAVE_BLUETOOTH)
-            this._bluetooth = new imports.ui.status.bluetooth.Indicator();
-        else
+        if (Config.HAVE_BLUETOOTH) {
+            const BluetoothStatus = await import('resource:///org/gnome/shell/ui/status/bluetooth.js');
+            this._bluetooth = new BluetoothStatus.Indicator();
+        } else {
             this._bluetooth = null;
+        }
 
-        this._system = new imports.ui.status.system.Indicator();
+        this._system = new SystemStatus.Indicator();
 
         // Replace the Screenshot item with a direct access to Sound settings.
         this._system._systemItem.child.replace_child(
             this._system._systemItem.child.get_child_at_index(2),
             new SoundSettingsItem());
 
-        this._volume = new imports.ui.status.volume.Indicator();
-        this._brightness = new imports.ui.status.brightness.Indicator();
-        this._remoteAccess = new imports.ui.status.remoteAccess.RemoteAccessApplet();
-        this._location = new imports.ui.status.location.Indicator();
-        this._thunderbolt = new imports.ui.status.thunderbolt.Indicator();
-        this._nightLight = new imports.ui.status.nightLight.Indicator();
-        this._darkMode = new imports.ui.status.darkMode.Indicator();
-        this._powerProfiles = new imports.ui.status.powerProfiles.Indicator();
-        this._rfkill = new imports.ui.status.rfkill.Indicator();
-        this._autoRotate = new imports.ui.status.autoRotate.Indicator();
+        this._camera = new CameraStatus.Indicator();
+        this._volumeOutput = new VolumeStatus.OutputIndicator();
+        this._volumeInput = new VolumeStatus.InputIndicator();
+        this._brightness = new BrightnessStatus.Indicator();
+        this._remoteAccess = new RemoteAccessStatus.RemoteAccessApplet();
+        this._location = new LocationStatus.Indicator();
+        this._thunderbolt = new ThunderboltStatus.Indicator();
+        this._nightLight = new NightLightStatus.Indicator();
+        this._darkMode = new DarkModeStatus.Indicator();
+        this._backlight = new BacklightStatus.Indicator();
+        this._powerProfiles = new PowerProfileStatus.Indicator();
+        this._rfkill = new RFKillStatus.Indicator();
+        this._autoRotate = new AutoRotateStatus.Indicator();
         this._unsafeMode = new UnsafeModeIndicator();
-        this._backgroundApps = new imports.ui.status.backgroundApps.Indicator();
+        this._backgroundApps = new BackgroundAppsStatus.Indicator();
 
+        // add privacy-related indicators before any external indicators
+        let pos = 0;
+        this._indicators.insert_child_at_index(this._remoteAccess, pos++);
+        this._indicators.insert_child_at_index(this._camera, pos++);
+        this._indicators.insert_child_at_index(this._volumeInput, pos++);
+        this._indicators.insert_child_at_index(this._location, pos++);
+
+        // append all other indicators
         this._indicators.add_child(this._brightness);
-        this._indicators.add_child(this._remoteAccess);
         this._indicators.add_child(this._thunderbolt);
-        this._indicators.add_child(this._location);
         this._indicators.add_child(this._nightLight);
         if (this._network)
             this._indicators.add_child(this._network);
         this._indicators.add_child(this._darkMode);
+        this._indicators.add_child(this._backlight);
         this._indicators.add_child(this._powerProfiles);
         if (this._bluetooth)
             this._indicators.add_child(this._bluetooth);
         this._indicators.add_child(this._rfkill);
         this._indicators.add_child(this._autoRotate);
-        this._indicators.add_child(this._volume);
+        this._indicators.add_child(this._volumeOutput);
         this._indicators.add_child(this._unsafeMode);
         this._indicators.add_child(this._system);
 
-        this._addItems(this._system.quickSettingsItems);
-        this._addItems(this._volume.quickSettingsItems);
-        this._addItems(this._brightness.quickSettingsItems);
+        // add our quick settings items before any external ones
+        const sibling = this.menu.getFirstItem();
+        this._addItemsBefore(this._system.quickSettingsItems, sibling);
+        this._addItemsBefore(this._volumeOutput.quickSettingsItems, sibling);
+        this._addItemsBefore(this._volumeInput.quickSettingsItems, sibling);
+        this._addItemsBefore(this._brightness.quickSettingsItems, sibling);
 
-        this._addItems(this._remoteAccess.quickSettingsItems);
-        this._addItems(this._thunderbolt.quickSettingsItems);
-        this._addItems(this._location.quickSettingsItems);
+        this._addItemsBefore(this._camera.quickSettingsItems, sibling);
+        this._addItemsBefore(this._remoteAccess.quickSettingsItems, sibling);
+        this._addItemsBefore(this._thunderbolt.quickSettingsItems, sibling);
+        this._addItemsBefore(this._location.quickSettingsItems, sibling);
         if (this._network)
-            this._addItems(this._network.quickSettingsItems);
+            this._addItemsBefore(this._network.quickSettingsItems, sibling);
         if (this._bluetooth)
-            this._addItems(this._bluetooth.quickSettingsItems);
-        this._addItems(this._powerProfiles.quickSettingsItems);
-        this._addItems(this._nightLight.quickSettingsItems);
-        this._addItems(this._darkMode.quickSettingsItems);
-        this._addItems(this._rfkill.quickSettingsItems);
-        this._addItems(this._autoRotate.quickSettingsItems);
-        this._addItems(this._unsafeMode.quickSettingsItems);
+            this._addItemsBefore(this._bluetooth.quickSettingsItems, sibling);
+        this._addItemsBefore(this._powerProfiles.quickSettingsItems, sibling);
+        this._addItemsBefore(this._nightLight.quickSettingsItems, sibling);
+        this._addItemsBefore(this._darkMode.quickSettingsItems, sibling);
+        this._addItemsBefore(this._backlight.quickSettingsItems, sibling);
+        this._addItemsBefore(this._rfkill.quickSettingsItems, sibling);
+        this._addItemsBefore(this._autoRotate.quickSettingsItems, sibling);
+        this._addItemsBefore(this._unsafeMode.quickSettingsItems, sibling);
 
-        this._addItems(this._backgroundApps.quickSettingsItems);
+        // append background apps
+        this._backgroundApps.quickSettingsItems.forEach(
+            item => this.menu.addItem(item, N_QUICK_SETTINGS_COLUMNS));
     }
 
-    _addItems(items, colSpan = 1) {
-        items.forEach(item => this.menu.addItem(item, colSpan));
+    _addItemsBefore(items, sibling, colSpan = 1) {
+        items.forEach(item => this.menu.insertItemBefore(item, sibling, colSpan));
     }
 });
 
-let originalQuickSettings = null;
+export default class CompactQuickSettingsExtension extends Extension {
+    enable() {
+        // Save and hide the original QuickSettings before replacing it.
+        this.originalQuickSettings = Main.panel.statusArea.quickSettings;
+        this.originalQuickSettings.container.hide();
 
-function init() {
-}
+        // Replace it with the QuickSettings with our compact version.
+        Main.panel.statusArea.quickSettings = null;
+        Main.panel.addToStatusArea('quickSettings',
+                                new CompactQuickSettings(),
+                                Main.panel.find_child_by_name("panelRight").get_children().length);
+    }
 
-function enable() {
-    // Save and hide the original QuickSettings before replacing it.
-    originalQuickSettings = Main.panel.statusArea.quickSettings;
-    originalQuickSettings.container.hide();
+    disable() {
+        if (this.originalQuickSettings !== null) {
+            // Destroy our custom QuickSettings menu.
+            Main.panel.statusArea.quickSettings.destroy()
 
-    // Replace it with the QuickSettings with our compact version.
-    Main.panel.statusArea.quickSettings = null;
-    Main.panel.addToStatusArea('quickSettings',
-                               new CompactQuickSettings(),
-                               Main.panel.find_child_by_name("panelRight").get_children().length);
-}
-
-function disable() {
-    // Destroy our custom QuickSettings menu.
-    Main.panel.statusArea.quickSettings.destroy()
-
-    // Finally, show and restore the original one.
-    originalQuickSettings.container.show();
-    Main.panel.statusArea.quickSettings = originalQuickSettings;
-    originalQuickSettings = null;
+            // Finally, show and restore the original one.
+            this.originalQuickSettings.container.show();
+            Main.panel.statusArea.quickSettings = this.originalQuickSettings;
+            this.originalQuickSettings = null;
+        }
+    }
 }
