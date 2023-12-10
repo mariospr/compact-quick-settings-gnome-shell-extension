@@ -178,7 +178,7 @@ class CompactQuickSettings extends PanelMenu.Button {
 
         // append background apps
         this._backgroundApps.quickSettingsItems.forEach(
-            item => this.menu.addItem(item, N_QUICK_SETTINGS_COLUMNS));
+            item => this.menu.addItem(item));
     }
 
     _addItemsBefore(items, sibling, colSpan = 1) {
