@@ -195,8 +195,8 @@ export default class CompactQuickSettingsExtension extends Extension {
         // Replace it with the QuickSettings with our compact version.
         Main.panel.statusArea.quickSettings = null;
         Main.panel.addToStatusArea('quickSettings',
-                                new CompactQuickSettings(),
-                                Main.panel.find_child_by_name("panelRight").get_children().length);
+                                   new CompactQuickSettings(),
+                                   Main.panel.get_child_at_index(2).get_children().length);
     }
 
     disable() {

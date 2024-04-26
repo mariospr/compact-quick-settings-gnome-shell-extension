@@ -5,5 +5,5 @@
     "url": "@URL@",
     "version": "@VERSION@",
     "gettext-domain": "@GETTEXT_DOMAIN@",
-    "shell-version": ["45"]
+    "shell-version": ["45", "46"]
 }
